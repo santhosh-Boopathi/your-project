@@ -71,19 +71,21 @@ jobs:
           eval "$(ssh-agent -s)"
           ssh-add ~/.ssh/id_rsa
 
-      - name: Copy files to EC2
-        run: |
-          rsync -avz --delete -e "ssh -o StrictHostKeyChecking=no" ./ ${{ secrets.EC2_USER }}@${{ secrets.EC2_HOST }}:/home/${{ secrets.EC2_USER }}/fullstack-app
-
-      - name: SSH into EC2 and deploy
+      - name: Deploy to EC2
         run: |
           ssh -o StrictHostKeyChecking=no ${{ secrets.EC2_USER }}@${{ secrets.EC2_HOST }} << 'EOF'
             cd ~/fullstack-app
+
+            # Build frontend
             cd client
             npm install
             npm run build
+
+            # Build backend
             cd ../server
             npm install
+
+            # Restart with PM2
             pm2 delete all || true
             pm2 start index.js --name fullstack-app
           EOF
